@@ -4,24 +4,35 @@
 {% endblock %}
 
 {% block body %}
-
-	{% for annonce in annonces %}
-
-		<div class="card" style="width: 18rem;">
-			<img src="https://via.placeholder.com/150" class="card-img-top" alt="placeholder">
-			<div class="card-body">
-				<h5 class="card-title">{{ annonce.title }}</h5>
-				<p class="card-text">{{ annonce.description }}</p>
+<table class="table">
+		<thead>
+			<tr>
+				<th>Trouvez la voiture de vos rêves</th>
+			</tr>
+		</thead>
+		<tbody>
+			{% for marque in marques %}
+				<tr>
+					<td><a href="{{ path('app_marque_tab',{'id':marque.id}) }}">{{ marque.name }}</a></td>
+				</tr>
+			{% else %}
+				<tr>
+					<td colspan="3">no records found</td>
+				</tr>
+			{% endfor %}
+		</tbody>
+	</table>
+	<div class="cards-container d-flex justify-content-around">
+		{% for annonce in annonces %}
+			<div class="card" style="width: 18rem;">
+				<img src="{{asset('images_directory/' ~ annonce.imgfile )}}" class="card-img-top" alt="placeholder">
+				<div class="card-body">
+					<h5 class="card-title">{{ annonce.title }}</h5>
+					<p class="card-text">{{ annonce.description }}</p>
+					<p class="card-text">{{ annonce.marque.name }}</p>
+					<a href="#" class="btn btn-primary">{{ annonce.prix }}</a>
+				</div>
 			</div>
-			<ul class="list-group list-group-flush">
-				<li class="list-group-item">{{ annonce.prix }}</li>
-				<li class="list-group-item">{{ annonce.year }}</li>
-				<li class="list-group-item">{{ annonce.prix }}</li>
-			</ul>
-			<div class="card-body">
-				<a href="#" class="card-link">link</a>
-				<a href="#" class="card-link">Another link</a>
-			</div>
-		</div>
-	{% endfor %}
+		{% endfor %}
+	</div>
 {% endblock %}
