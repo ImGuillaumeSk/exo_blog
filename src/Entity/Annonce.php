@@ -44,6 +44,12 @@ class Annonce
     #[ORM\Column]
     private ?bool $is_visible = null;
 
+    #[ORM\ManyToOne(inversedBy: 'annonces')]
+    private ?Marque $marque = null;
+
+    #[ORM\ManyToOne(inversedBy: 'annonces')]
+    private ?User $author = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -165,6 +171,30 @@ class Annonce
     public function setIsVisible(bool $is_visible): self
     {
         $this->is_visible = $is_visible;
+
+        return $this;
+    }
+
+    public function getMarque(): ?Marque
+    {
+        return $this->marque;
+    }
+
+    public function setMarque(?Marque $marque): self
+    {
+        $this->marque = $marque;
+
+        return $this;
+    }
+
+    public function getAuthor(): ?User
+    {
+        return $this->author;
+    }
+
+    public function setAuthor(?User $author): self
+    {
+        $this->author = $author;
 
         return $this;
     }
