@@ -3,45 +3,56 @@
 {% endblock %}
 
 {% block body %}
-    <div class="container">
-        <h1 class="title text-center mt-4">Annonces pour la marque :
-            {{brand.name}}</h1>
-        <table class="table">
-            <tbody>
-                {% for marque in marques %}
-                    <tr>
-                        <td>
-                            <a href="{{ path('app_marque_tab', {'id':marque.id}) }}">{{ marque.name }}</a>
-                        </td>
-                    </tr>
-                {% else %}
-                    <tr>
-                        <td colspan="3">no records found</td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        <div class="cards-container">
-            <div class="cards">
-                {% for annonce in brand.annonces %}
-                    <div class="card" style="width: 18rem;">
-                        <img class="card-img-top" src="{{asset('images_directory/' ~ annonce.imgfile )}}" alt="Card image cap">
-                        <div class="card-body">
-                            <h5 class="card-title">
-                                {{annonce.marque.name}}
-                            </h5>
-                            <p class="card-text">
-                                {{annonce.description}}
-                            </p>
-                            <a href="{{ path('app_annonce_show', {'id': annonce.id}) }}" class="btn btn-success">Voir en détail</a>
-                        </div>
-                    </div>
-                {% else %}
-                    <tr>
-                        <td colspan="3">no records found</td>
-                    </tr>
-                {% endfor %}
-            </div>
-        </div>
-    </div>
+	<div class="container">
+		<h1 class="title text-center mt-4">Annonces pour la marque :
+			{{brand.name}}</h1>
+		<table class="table">
+			<tbody>
+				{% for marque in marques %}
+					<tr>
+						<td>
+							<a href="{{ path('app_marque_tab', {'id':marque.id}) }}">{{ marque.name }}</a>
+						</td>
+					</tr>
+				{% else %}
+					<tr>
+						<td colspan="3">no records found</td>
+					</tr>
+				{% endfor %}
+			</tbody>
+		</table>
+		<div class="cards-container">
+			<div class="cards d-flex justify-content-around gap-1">
+				{% for annonce in brand.annonces %}
+					<div class="card" style="width: 18rem;">
+						<img class="card-img-top" src="{{asset( annonce.imgfile )}}" alt="Card image cap">
+						<div class="card-body">
+							<h5 class="card-title">
+								{{annonce.marque.name}}
+							</h5>
+							<p class="card-text">
+								{{annonce.description|raw}}
+							</p>
+							<a href="{{ path('app_annonce_show', {'id': annonce.id}) }}" class="btn btn-info">Voir en détail</a>
+							{% if app.user %}
+								{% if annonce.isUserFav(app.user) %}
+									<a href="{{ path('app_annonce_fav', {'id': annonce.id}) }}" class="btn btn-danger">
+										<i class="fa-solid fa-heart"></i>
+									</a>
+								{% else %}
+									<a href="{{ path('app_annonce_fav', {'id': annonce.id}) }}" class="btn btn-danger">
+										<i class="fa-regular fa-heart"></i>
+									</a>
+								{% endif %}
+							{% endif %}
+						</div>
+					</div>
+				{% else %}
+					<tr>
+						<td colspan="3">no records found</td>
+					</tr>
+				{% endfor %}
+			</div>
+		</div>
+	</div>
 {% endblock %}

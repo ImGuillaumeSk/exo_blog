@@ -4,7 +4,7 @@
 {% endblock %}
 
 {% block body %}
-<table class="table">
+	<table class="table">
 		<thead>
 			<tr>
 				<th>Trouvez la voiture de vos rêves</th>
@@ -13,7 +13,9 @@
 		<tbody>
 			{% for marque in marques %}
 				<tr>
-					<td><a href="{{ path('app_marque_tab',{'id':marque.id}) }}">{{ marque.name }}</a></td>
+					<td>
+						<a href="{{ path('app_marque_tab',{'id':marque.id}) }}">{{ marque.name }}</a>
+					</td>
 				</tr>
 			{% else %}
 				<tr>
@@ -22,15 +24,42 @@
 			{% endfor %}
 		</tbody>
 	</table>
-	<div class="cards-container d-flex justify-content-around">
+	{% if app.user %}
+		<div class="text-center mt-3">
+			<a href="{{ path('app_annonce_new') }}" class="btn btn-success">Ajouter une nouvelle annonce</a>
+		</div>
+	{% endif %}
+
+	{% if is_granted('ROLE_ADMIN') %}
+		<div class="text-center mt-3">
+			<a class="btn btn-warning" href="{{ path('app_annonce_index')}}">Liste des annonces</a>
+			<a class="btn btn-warning" href="{{ path('app_marque_index')}}">Liste des marques</a>
+		</div>
+	{% endif %}
+	<div class="cards-container d-flex justify-content-around flex-wrap gap-1">
 		{% for annonce in annonces %}
-			<div class="card" style="width: 18rem;">
-				<img src="{{asset('images_directory/' ~ annonce.imgfile )}}" class="card-img-top" alt="placeholder">
+			<div
+				class="card" style="width: 18rem; gap">
+				{# <img src="{{asset('images_directory/' ~ annonce.imgfile )}}" class="card-img-top" alt="placeholder"> #}
+				<img src="{{asset(annonce.imgfile )}}" class="card-img-top" alt="placeholder">
 				<div class="card-body">
 					<h5 class="card-title">{{ annonce.title }}</h5>
-					<p class="card-text">{{ annonce.description }}</p>
-					<p class="card-text">{{ annonce.marque.name }}</p>
-					<a href="#" class="btn btn-primary">{{ annonce.prix }}</a>
+					<p class="card-text">{{ annonce.description|raw }}</p>
+					<p class="card-text">{{ annonce.title }}</p>
+					<a href="{{ path('app_annonce_show', {'id': annonce.id}) }}" class="btn btn-info">Voir en détail</a>
+
+					{% if app.user %}
+						{% if annonce.isUserFav(app.user) %}
+							<a href="{{ path('app_annonce_fav', {'id': annonce.id}) }}" class="btn btn-danger">
+								<i class="fa-solid fa-heart"></i>
+							</a>
+						{% else %}
+							<a href="{{ path('app_annonce_fav', {'id': annonce.id}) }}" class="btn btn-danger">
+								<i class="fa-regular fa-heart"></i>
+							</a>
+						{% endif %}
+					{% endif %}
+
 				</div>
 			</div>
 		{% endfor %}

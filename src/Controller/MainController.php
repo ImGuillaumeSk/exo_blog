@@ -15,9 +15,10 @@ class MainController extends AbstractController
     public function index(AnnonceRepository $annonceRepository, MarqueRepository $marqueRepository): Response
     {
         return $this->render('main/index.html.twig', [
-            'annonces' => $annonceRepository->findAll(),
+            'annonces' => $annonceRepository->findBy([
+                'is_visible' => true
+            ]),
             'marques' => $marqueRepository->findAll(),
-
         ]);
     }
 

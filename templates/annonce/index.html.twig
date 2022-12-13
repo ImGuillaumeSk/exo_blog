@@ -28,7 +28,7 @@
             <tr>
                 <td>{{ annonce.id }}</td>
                 <td>{{ annonce.title }}</td>
-                <td>{{ annonce.description }}</td>
+                <td>{{ annonce.description|raw }}</td>
                 <td>{{ annonce.marque.name }}</td>
                 <td>{{ annonce.model }}</td>
                 <td>{{ annonce.prix }}</td>

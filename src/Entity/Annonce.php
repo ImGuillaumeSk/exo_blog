@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\AnnonceRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
@@ -49,6 +51,17 @@ class Annonce
 
     #[ORM\ManyToOne(inversedBy: 'annonces')]
     private ?User $author = null;
+
+    #[ORM\OneToMany(mappedBy: 'annonces', targetEntity: AnnonceListByUser::class)]
+    private Collection $usersFav;
+
+    #[ORM\Column(length: 6)]
+    private ?string $reference = null;
+
+    public function __construct()
+    {
+        $this->usersFav = new ArrayCollection();
+    }
 
     public function getId(): ?int
     {
@@ -163,7 +176,7 @@ class Annonce
         return $this;
     }
 
-    public function isIsVisible(): ?bool
+    public function getIsVisible(): ?bool
     {
         return $this->is_visible;
     }
@@ -198,4 +211,60 @@ class Annonce
 
         return $this;
     }
+
+    /**
+     * @return Collection<int, AnnonceListByUser>
+     */
+    public function getUsersFav(): Collection
+    {
+        return $this->usersFav;
+    }
+
+    public function addUsersFav(AnnonceListByUser $usersFav): self
+    {
+        if (!$this->usersFav->contains($usersFav)) {
+            $this->usersFav->add($usersFav);
+            $usersFav->setAnnonces($this);
+        }
+
+        return $this;
+    }
+
+    public function removeUsersFav(AnnonceListByUser $usersFav): self
+    {
+        if ($this->usersFav->removeElement($usersFav)) {
+            // set the owning side to null (unless already changed)
+            if ($usersFav->getAnnonces() === $this) {
+                $usersFav->setAnnonces(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     *
+     * @param User $user
+     * @return boolean
+     */
+    public function isUserfav(User $user): bool
+    {
+        foreach ($this->usersFav as $usersFav) {
+            if ($usersFav->getUsers() === $user) return true;
+        }
+        return false;
+    }
+
+    public function getReference(): ?string
+    {
+        return $this->reference;
+    }
+
+    public function setReference(string $reference): self
+    {
+        $this->reference = $reference;
+
+        return $this;
+    }
+    
 }

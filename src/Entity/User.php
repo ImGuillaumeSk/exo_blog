@@ -34,9 +34,13 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(mappedBy: 'author', targetEntity: Annonce::class)]
     private Collection $annonces;
 
+    #[ORM\OneToMany(mappedBy: 'users', targetEntity: AnnonceListByUser::class)]
+    private Collection $annonceFav;
+
     public function __construct()
     {
         $this->annonces = new ArrayCollection();
+        $this->annonceFav = new ArrayCollection();
     }
     
     public function __toString()
@@ -138,6 +142,36 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
             // set the owning side to null (unless already changed)
             if ($annonce->getAuthor() === $this) {
                 $annonce->setAuthor(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, AnnonceListByUser>
+     */
+    public function getAnnonceFav(): Collection
+    {
+        return $this->annonceFav;
+    }
+
+    public function addAnnonceFav(AnnonceListByUser $annonceFav): self
+    {
+        if (!$this->annonceFav->contains($annonceFav)) {
+            $this->annonceFav->add($annonceFav);
+            $annonceFav->setUsers($this);
+        }
+
+        return $this;
+    }
+
+    public function removeAnnonceFav(AnnonceListByUser $annonceFav): self
+    {
+        if ($this->annonceFav->removeElement($annonceFav)) {
+            // set the owning side to null (unless already changed)
+            if ($annonceFav->getUsers() === $this) {
+                $annonceFav->setUsers(null);
             }
         }
 

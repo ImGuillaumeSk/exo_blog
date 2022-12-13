@@ -3,19 +3,23 @@
 namespace App\Controller;
 
 use App\Entity\Annonce;
+use App\Entity\AnnonceListByUser;
 use App\Form\AnnonceType;
+use App\Repository\AnnonceListByUserRepository;
 use App\Repository\AnnonceRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\File\Exception\FileException;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\String\Slugger\SluggerInterface;
 
 #[Route('/annonce')]
 class AnnonceController extends AbstractController
 {
     #[Route('/', name: 'app_annonce_index', methods: ['GET'])]
+    #[IsGranted('ROLE_ADMIN')]
     public function index(AnnonceRepository $annonceRepository): Response
     {
         return $this->render('annonce/index.html.twig', [
@@ -49,8 +53,19 @@ class AnnonceController extends AbstractController
                 }
                 $annonce->setImgfile($newFilename);
             }
+
+            $lettres = range('A', 'Z');
+            shuffle($lettres);
+            $lettre = array_shift($lettres);
+            shuffle($lettres);
+            $lettre .= array_shift($lettres);
+            $nombre = mt_rand(1000, 9999);
+
+            $reference = $lettre . $nombre;
+
             $annonce->setAuthor($author);
             $annonce->setIsVisible(true);
+            $annonce->setReference($reference);
             $annonceRepository->save($annonce, true);
             return $this->redirectToRoute('home', [], Response::HTTP_SEE_OTHER);
         }
@@ -69,17 +84,41 @@ class AnnonceController extends AbstractController
     }
 
     #[Route('/{id}/edit', name: 'app_annonce_edit', methods: ['GET', 'POST'])]
-    public function edit(Request $request, Annonce $annonce, AnnonceRepository $annonceRepository): Response
+    public function edit($id, Request $request, Annonce $annonce, AnnonceRepository $annonceRepository, SluggerInterface $slugger): Response
     {
+        $thisAnnonce = $annonceRepository->find($id);
+        if ($thisAnnonce->getisVisible() == false) {
+            $this->addFlash('Erreur', 'Cette annonce n\'existe plus');
+            return $this->redirectToRoute('home');
+        }
         $form = $this->createForm(AnnonceType::class, $annonce);
         $form->handleRequest($request);
+        $author = $this->getUser();
+        if ($this->container->get('security.authorization_checker')->IsGranted('ROLE_ADMIN') or $annonce->getAuthor() == $author) {
 
-        if ($form->isSubmitted() && $form->isValid()) {
-            $annonceRepository->save($annonce, true);
+            if ($form->isSubmitted() && $form->isValid()) {
+                $imageFile = $form->get('imgfile')->getData();
 
-            return $this->redirectToRoute('app_annonce_index', [], Response::HTTP_SEE_OTHER);
+                if ($imageFile) {
+                    $originalFilename = pathinfo($imageFile->getClientOriginalName(), PATHINFO_FILENAME);
+                    // this is needed to safely include the file name as part of the URL
+                    $safeFilename = $slugger->slug($originalFilename);
+                    $newFilename = $safeFilename . '-' . uniqid() . '.' . $imageFile->guessExtension();
+                    try {
+                        $imageFile->move(
+                            $this->getParameter('images_directory'),
+                            $newFilename
+                        );
+                    } catch (FileException $e) {
+                        // ... handle exception if something happens during file upload
+                    }
+                    $annonce->setImgfile($newFilename);
+                }
+                $annonceRepository->save($annonce, true);
+                $this->addFlash('Succès', 'Votre annonce a bien été modifiée');
+                return $this->redirectToRoute('app_annonce_index', [], Response::HTTP_SEE_OTHER);
+            }
         }
-
         return $this->renderForm('annonce/edit.html.twig', [
             'annonce' => $annonce,
             'form' => $form,
@@ -89,10 +128,46 @@ class AnnonceController extends AbstractController
     #[Route('/{id}', name: 'app_annonce_delete', methods: ['POST'])]
     public function delete(Request $request, Annonce $annonce, AnnonceRepository $annonceRepository): Response
     {
-        if ($this->isCsrfTokenValid('delete' . $annonce->getId(), $request->request->get('_token'))) {
-            $annonceRepository->remove($annonce, true);
+        $author = $this->getUser();
+        if ($author == false) {
+            $this->addFlash('Erreur', 'Vous devez avoir un compte pour supprimer une annonce');
+            return $this->redirectToRoute('home');
+        }
+        if ($this->container->get('security.authorization_checker')->IsGranted('ROLE_ADMIN') or $annonce->getAuthor() == $author) {
+            $annonce->getisVisible(false);
+            $annonceRepository->save($annonce);
+        } else {
+            $this->addFlash('Erreur', 'Vous n\'êtes pas l\'auteur de cette annonce !');
+            return $this->redirectToRoute('app_annonce_show', ['id' => $annonce->getId()]);
+        }
+        $this->addFlash('Succès', 'Votre événement a bien été supprimé !');
+
+        return $this->redirectToRoute('home', [], Response::HTTP_SEE_OTHER);
+    }
+
+    #[Route('/{id}/fav', name: 'app_annonce_fav', methods: ['GET', 'POST'])]
+    public function favUserAnnonce(Annonce $annonce, AnnonceListByUserRepository $annonceListByUserRepository): Response
+    {
+        $user = $this->getUser();
+        if (!$user) return $this->redirectToRoute('app_login');
+
+        if ($annonce->isUserfav($user)) {
+            $signedUp = $annonceListByUserRepository->findOneBy([
+                'annonces' => $annonce,
+                'users' => $user
+            ]);
+            $annonceListByUserRepository->remove($signedUp);
+            $this->addFlash('Erreur', "Cette annonce n'est plus dans vos favoris.");
+            return $this->redirectToRoute('home');
         }
 
-        return $this->redirectToRoute('app_annonce_index', [], Response::HTTP_SEE_OTHER);
+        $newFav = new AnnonceListByUser();
+        $newFav->setAnnonces($annonce)
+            ->setUsers($user);
+
+        $annonceListByUserRepository->save($newFav);
+        $this->addFlash('Succès', "Cette annonce est désormais dans vos favoris.");
+
+        return $this->redirectToRoute('home');
     }
 }
